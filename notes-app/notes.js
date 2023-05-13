@@ -4,6 +4,7 @@ const NOTES_FILE_PATH = "notes.json";
 
 const addNewNote = (title, body) => {
   let notes = readNotes();
+  console.log(isNoteTitleUnique(title));
   if (isNoteTitleUnique(title)) {
     notes.push({ title, body });
     writeNoteFile(notes);
@@ -17,9 +18,10 @@ const readNotes = () => {
     const data = fs.readFileSync(NOTES_FILE_PATH, {
       encoding: "utf-8",
     });
+    debugger
     return JSON.parse(data);
   } catch (err) {
-    console.error("File not found!");
+    console.error(err);
     return [];
   }
 };
