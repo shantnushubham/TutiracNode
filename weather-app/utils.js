@@ -37,7 +37,7 @@ const METEO_URL = "https://api.open-meteo.com/v1/forecast";
 
 const GEOCODE_URL = "https://geocode.maps.co/search";
 
-const getWeatherByCoordinates = (latitude, longitude) => {
+const getWeatherByCoordinates = (latitude, longitude, callback) => {
   axios
     .get(METEO_URL, {
       params: {
@@ -62,23 +62,25 @@ const getWeatherByCoordinates = (latitude, longitude) => {
           },
         },
       }) => {
-        console.log(
-          ` The weather information at Kolkata, WB, India is:
-          Temperature: ${temperature} ºC
-          Wind Speed: ${windSpeed} km/h
-          Wind Direction: ${windDirection} º
-          Sky: ${isDay === 1 ? "Day" : "Night"}
-          Weather Condition: ${getWeatherTypeByCode(weatherCode)}
-      `
-        );
+        callback(undefined, {
+          temperature: `${temperature} ºC`,
+          windSpeed: `${windSpeed} km/h`,
+          windDirection: `${windDirection}º`,
+          sky: isDay === 1 ? "Day" : "Night",
+          weatherCondition: getWeatherTypeByCode(weatherCode),
+        });
       }
     )
     .catch((err) => {
-      console.error("Promise not fulfilled", err.reason);
+      if (err.response) {
+        callback(err.response.data.reason, undefined);
+      } else {
+        callback("Please check your connection.", undefined);
+      }
     });
 };
 
-const getCoordinatesByAddress = (address) => {
+const getCoordinatesByAddress = (address, callback) => {
   axios
     .get(GEOCODE_URL, {
       params: {
@@ -88,16 +90,24 @@ const getCoordinatesByAddress = (address) => {
     .then(({ data }) => {
       if (data.length) {
         data = data[0];
-        console.log(
-          `The address is: ${address}
-          The display address is: ${data.display_name}
-          The latitude is: ${data.lat}
-          The longitude is: ${data.lon}
-          `
+        callback(undefined, {
+          latitude: data.lat,
+          longitude: data.lon,
+          displayAddress: data.display_name,
+        });
+      } else {
+        console.error(
+          "The location cannot be translated into coordinates, please try some other location."
         );
       }
     })
-    .catch();
+    .catch((err) => {
+      if (err.response) {
+        callback(err.response.data.reason, undefined);
+      } else {
+        callback("Please check your connection.", undefined);
+      }
+    });
 };
 
 module.exports = { getWeatherByCoordinates, getCoordinatesByAddress };
