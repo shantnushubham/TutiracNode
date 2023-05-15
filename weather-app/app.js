@@ -1,4 +1,5 @@
-const { getWeatherByCoordinates, getCoordinatesByAddress } = require("./utils");
+const { getWeatherByCoordinates } = require("./utils/forecast");
+const { getCoordinatesByAddress } = require("./utils/geocode");
 
 console.log("Starting my Weather App");
 

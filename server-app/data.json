@@ -1,0 +1,20 @@
+[
+  {
+    "first_name": "Shantanu",
+    "last_name": "Shubham",
+    "gender": "M",
+    "age": 24
+  },
+  {
+    "first_name": "Abdul",
+    "last_name": "Sharu",
+    "gender": "M",
+    "age": 23
+  },
+  { 
+    "first_name": "Neha", 
+    "last_name": "Singh", 
+    "gender": "F", 
+    "age": 24 
+  }
+]
