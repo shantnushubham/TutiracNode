@@ -34,7 +34,7 @@ const User = model("User", {
     require: true,
     trim: true,
     minlength: 8,
-    validator: {
+    validate: {
       validator(pass) {
         // 1. Password's min length should be 8 -> Done
         // 2. Password must not contain spaces, newlines and tabs.
@@ -48,6 +48,10 @@ const User = model("User", {
         }
       },
     },
+  },
+  isEligible: {
+    type: Boolean,
+    default: false,
   },
 });
 
