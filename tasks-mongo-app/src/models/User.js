@@ -1,7 +1,8 @@
-const { model } = require("mongoose");
+const { model, Schema } = require("mongoose");
 const validator = require("validator");
+const { encryptPassword, checkPassword } = require("../bcrypt");
 
-const User = model("User", {
+const UserSchema = new Schema({
   name: {
     type: String,
     trim: true,
@@ -12,6 +13,7 @@ const User = model("User", {
     trim: true,
     required: true,
     lowercase: true,
+    unique: true,
     validate: {
       validator(e) {
         return validator.isEmail(e);
@@ -54,5 +56,38 @@ const User = model("User", {
     default: false,
   },
 });
+
+UserSchema.pre("save", async function (next) {
+  try {
+    const user = this;
+    if (user.modifiedPaths().includes("password")) {
+      user.password = await encryptPassword(user.password);
+    }
+    next();
+  } catch (err) {
+    throw err;
+  }
+});
+
+UserSchema.statics.findByEmailAndPasswordForAuth = async (email, password) => {
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new Error(`Login Failed.`);
+    }
+    const encryptedPassword = user.password;
+    const isMatch = await checkPassword(password, encryptedPassword);
+    if (!isMatch) {
+      throw new Error("Login Failed.");
+    }
+    console.log("Login Success!");
+    return user;
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+};
+
+const User = model("User", UserSchema);
 
 module.exports = User;
