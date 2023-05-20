@@ -2,27 +2,25 @@ const User = require("../models/User");
 
 const SUPPORTED_UPDATES = ["name", "isEligible", "age", "password"];
 
-const addNewUser = (req, res) => {
-  const { name, email, age, password } = req.body;
-  const user = new User({ name, email, age, password });
-  user
-    .save()
-    .then(() => {
-      console.log("Saved.");
-      return res.status(201).send(user);
-    })
-    .catch((err) => {
-      console.error("Not Saved", err);
-      return res.status(400).send({
-        message: err,
-      });
+const addNewUser = async (req, res) => {
+  try {
+    const { name, email, age, password } = req.body;
+    const user = new User({ name, email, age, password });
+    await user.save();
+    console.log("Saved.");
+    const token = await user.generateUserToken();
+    return res.status(201).send({ user, token });
+  } catch (err) {
+    console.error("Not Saved", err);
+    return res.status(400).send({
+      message: err,
     });
+  }
 };
 
 const getAllUsers = (req, res) => {
   User.find()
     .then((foundUsers) => {
-      console.log(foundUsers);
       return res.status(200).send(foundUsers);
     })
     .catch((error) => {
@@ -49,55 +47,41 @@ const getUserById = (req, res) => {
     });
 };
 
-const updateUserById = (req, res) => {
-  const { _id } = req.params;
-  const paramsToUpdate = Object.keys(req.body);
-  const isValidUpdate = paramsToUpdate.every((param) =>
-    SUPPORTED_UPDATES.includes(param)
-  );
-  if (!isValidUpdate) {
-    const message = `Invalid parameters are passed. You can only update: ${SUPPORTED_UPDATES.toString()}`;
-    console.warn(message);
-    return res.status(400).send({ message });
-  }
-  User.findById(_id).then((user) => {
-    if (!user) {
-      const message = `User with ID: ${_id} was not found.`;
+const updateUser = async (req, res) => {
+  try {
+    const paramsToUpdate = Object.keys(req.body);
+    const isValidUpdate = paramsToUpdate.every((param) =>
+      SUPPORTED_UPDATES.includes(param)
+    );
+    if (!isValidUpdate) {
+      const message = `Invalid parameters are passed. You can only update: ${SUPPORTED_UPDATES.toString()}`;
       console.warn(message);
-      return res.status(404).send({ message });
+      return res.status(400).send({ message });
     }
+    const { user } = req;
     paramsToUpdate.forEach((param) => {
       user[param] = req.body[param];
     });
-    user
-      .save()
-      .then(() => {
-        console.info(`User with ID: ${_id} was successfully updated.`);
-        return res.status(200).send(true);
-      })
-      .catch((err) => {
-        console.error(err);
-        return res.status(500).send({ message: err });
-      });
-  });
+    await user.save();
+    console.info(`User with ID: ${user._id} was successfully updated.`);
+    return res.status(200).send(true);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: err });
+  }
 };
 
-const deleteUserById = (req, res) => {
-  const { _id } = req.params;
-  User.deleteOne({ _id })
-    .then(({ deletedCount }) => {
-      if (!deletedCount) {
-        const message = `User with ID: ${_id} is not found.`;
-        console.error(message);
-        return res.status(404).send({ message });
-      }
-      console.info(`User with ID: ${_id} was successfully deleted.`);
-      return res.status(200).send(true);
-    })
-    .catch((error) => {
-      console.error(error);
-      return res.status(500).send({ message: error });
-    });
+const deleteUser = async (req, res) => {
+  try {
+    const { user } = req;
+    console.log(user);
+    await User.deleteOne(user);
+    console.info(`User with ID: ${user._id} was successfully deleted.`);
+    return res.status(200).send(true);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ message: error });
+  }
 };
 
 const markUsersAsEligible = (req, res) => {
@@ -117,25 +101,48 @@ const markUsersAsEligible = (req, res) => {
     .catch((err) => res.status(500).send({ message: err }));
 };
 
-const loginUser = (req, res) => {
-  const { email, password } = req.body;
-  User.findByEmailAndPasswordForAuth(email, password)
-    .then((user) => {
-      console.info(`User with email: ${email} successfully signed in.`);
-      return res.status(200).send(user);
-    })
-    .catch((err) => {
-      console.error(err);
-      return res.status(500).send({ message: "Login Failed!" });
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findByEmailAndPasswordForAuth(email, password);
+    const token = await user.generateUserToken();
+    console.info(`User with email: ${email} successfully signed in.`);
+    return res.status(200).send({ user, token });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: "Login Failed!" });
+  }
+};
+
+const logoutUser = async (req, res) => {
+  try {
+    const { token, user } = req;
+    user.tokens = user.tokens.filter((presentToken) => {
+      return presentToken.token !== token;
     });
+    user.save();
+    return res.status(200).send();
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: err });
+  }
+};
+
+const logoutAllForUser = async (req, res) => {
+  const { token, user } = req;
+  user.tokens = [];
+  user.save();
+  return res.status(200).send();
 };
 
 module.exports = {
   addNewUser,
   getAllUsers,
   getUserById,
-  updateUserById,
-  deleteUserById,
+  updateUser,
+  deleteUser,
   markUsersAsEligible,
   loginUser,
+  logoutUser,
+  logoutAllForUser,
 };

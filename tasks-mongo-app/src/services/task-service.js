@@ -18,31 +18,30 @@ const getTaskById = (req, res) => {
     });
 };
 
-const addNewTask = (req, res) => {
-  const taskToAdd = req.body;
-  const task = new Task({ ...taskToAdd });
-  task
-    .save()
-    .then(() => {
-      console.log(`New Task with ID: ${task.id} was successfully created.`);
-      return res.status(201).send(task);
-    })
-    .catch((error) => {
-      console.error(error);
-      return res.status(400).send({ message: error });
-    });
+const addNewTask = async (req, res) => {
+  try {
+    const taskToAdd = req.body;
+    let task = new Task({ ...taskToAdd, owner: req.user._id });
+    await task.save();
+    console.log(`New Task with ID: ${task.id} was successfully created.`);
+    task = await task.populate("owner");
+    return res.status(201).send(task);
+  } catch (error) {
+    console.error(error);
+    return res.status(400).send({ message: error });
+  }
 };
 
-const getAllTasks = (req, res) => {
-  Task.find()
-    .then((foundTasks) => {
-      console.log(`Found ${foundTasks.length} tasks.`);
-      return res.status(200).send(foundTasks);
-    })
-    .catch((error) => {
-      console.error(error);
-      return res.status(500).send({ message: error });
-    });
+const getAllTasks = async (req, res) => {
+  try {
+    let foundTasks = await Task.find();
+    foundTasks = await foundTasks.populate("owner").exec();
+    console.log(`Found ${foundTasks.length} tasks.`);
+    return res.status(200).send(foundTasks);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ message: error });
+  }
 };
 
 const updateTaskById = (req, res) => {

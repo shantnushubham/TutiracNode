@@ -1,6 +1,7 @@
 const { model, Schema } = require("mongoose");
 const validator = require("validator");
 const { encryptPassword, checkPassword } = require("../bcrypt");
+const { generateToken } = require("../jwt");
 
 const UserSchema = new Schema({
   name: {
@@ -55,6 +56,14 @@ const UserSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  tokens: [
+    {
+      token: {
+        type: String,
+        require: true,
+      },
+    },
+  ],
 });
 
 UserSchema.pre("save", async function (next) {
@@ -87,6 +96,28 @@ UserSchema.statics.findByEmailAndPasswordForAuth = async (email, password) => {
     throw err;
   }
 };
+
+UserSchema.methods.toJSON = function () {
+  var obj = this.toObject();
+  delete obj.tokens;
+  return obj;
+};
+
+UserSchema.methods.generateUserToken = async function () {
+  const user = this;
+  const token = await generateToken(user._id);
+  console.log(user.tokens);
+  user.tokens.push({ token });
+  console.log(user.tokens);
+  user.save();
+  return token;
+};
+
+UserSchema.virtual("tasks", {
+  ref: "Task",
+  localField: "_id",
+  foreignField: "owner",
+});
 
 const User = model("User", UserSchema);
 

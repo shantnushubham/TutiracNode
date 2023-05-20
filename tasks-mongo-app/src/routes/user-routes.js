@@ -3,20 +3,25 @@ const {
   addNewUser,
   getAllUsers,
   getUserById,
-  updateUserById,
-  deleteUserById,
+  updateUser,
+  deleteUser,
   markUsersAsEligible,
-  loginUser
+  loginUser,
+  logoutUser,
+  logoutAllForUser,
 } = require("../services/user-service");
+const { authMiddleware } = require("../middlewares/middleware");
 
 const router = express.Router();
 
 router.post("/add", addNewUser);
-router.get("/get/all", getAllUsers);
-router.get("/:_id", getUserById);
-router.put("/:_id", updateUserById);
-router.delete("/:_id", deleteUserById);
-router.patch("/mark-eligible", markUsersAsEligible);
-router.post("/login", loginUser)
+router.get("/get/all", authMiddleware, getAllUsers);
+router.get("/:_id", authMiddleware, getUserById);
+router.put("/me", authMiddleware, updateUser);
+router.delete("/me", authMiddleware, deleteUser);
+router.patch("/mark-eligible", authMiddleware, markUsersAsEligible);
+router.post("/login", loginUser);
+router.post("/logout", authMiddleware, logoutUser);
+router.post("/logoutAll", authMiddleware, logoutAllForUser);
 
 module.exports = router;
