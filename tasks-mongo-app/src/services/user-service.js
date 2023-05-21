@@ -47,6 +47,17 @@ const getUserById = (req, res) => {
     });
 };
 
+const getUserInfoWithTasks = async (req, res) => {
+  try {
+    let user = req.user;
+    await user.populate("tasks");
+    return res.status(200).send(user);
+  } catch (err) {
+    console.error("Error: ", err);
+    return res.status(500).send({ message: err });
+  }
+};
+
 const updateUser = async (req, res) => {
   try {
     const paramsToUpdate = Object.keys(req.body);
@@ -145,4 +156,5 @@ module.exports = {
   loginUser,
   logoutUser,
   logoutAllForUser,
+  getUserInfoWithTasks,
 };

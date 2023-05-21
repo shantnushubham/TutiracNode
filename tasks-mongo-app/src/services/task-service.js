@@ -34,8 +34,8 @@ const addNewTask = async (req, res) => {
 
 const getAllTasks = async (req, res) => {
   try {
-    let foundTasks = await Task.find();
-    foundTasks = await foundTasks.populate("owner").exec();
+    let foundTasks = await Task.find().populate("owner").exec();
+    // foundTasks = await foundTasks.populate("owner").exec();
     console.log(`Found ${foundTasks.length} tasks.`);
     return res.status(200).send(foundTasks);
   } catch (error) {

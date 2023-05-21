@@ -9,6 +9,7 @@ const {
   loginUser,
   logoutUser,
   logoutAllForUser,
+  getUserInfoWithTasks,
 } = require("../services/user-service");
 const { authMiddleware } = require("../middlewares/middleware");
 
@@ -23,5 +24,6 @@ router.patch("/mark-eligible", authMiddleware, markUsersAsEligible);
 router.post("/login", loginUser);
 router.post("/logout", authMiddleware, logoutUser);
 router.post("/logoutAll", authMiddleware, logoutAllForUser);
+router.get("/tasks/me", authMiddleware, getUserInfoWithTasks);
 
 module.exports = router;

@@ -66,6 +66,12 @@ const UserSchema = new Schema({
   ],
 });
 
+UserSchema.virtual("tasks", {
+  ref: "Task",
+  localField: "_id",
+  foreignField: "owner",
+});
+
 UserSchema.pre("save", async function (next) {
   try {
     const user = this;
@@ -97,6 +103,9 @@ UserSchema.statics.findByEmailAndPasswordForAuth = async (email, password) => {
   }
 };
 
+UserSchema.set("toObject", { virtuals: true });
+UserSchema.set("toJSON", { virtuals: true });
+
 UserSchema.methods.toJSON = function () {
   var obj = this.toObject();
   delete obj.tokens;
@@ -112,12 +121,6 @@ UserSchema.methods.generateUserToken = async function () {
   user.save();
   return token;
 };
-
-UserSchema.virtual("tasks", {
-  ref: "Task",
-  localField: "_id",
-  foreignField: "owner",
-});
 
 const User = model("User", UserSchema);
 
