@@ -2,69 +2,79 @@ const { model, Schema } = require("mongoose");
 const validator = require("validator");
 const { encryptPassword, checkPassword } = require("../bcrypt");
 const { generateToken } = require("../jwt");
+const TaskModel = require("./Task");
 
-const UserSchema = new Schema({
-  name: {
-    type: String,
-    trim: true,
-    required: true,
-  },
-  email: {
-    type: String,
-    trim: true,
-    required: true,
-    lowercase: true,
-    unique: true,
-    validate: {
-      validator(e) {
-        return validator.isEmail(e);
+const UserSchema = new Schema(
+  {
+    name: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+    email: {
+      type: String,
+      trim: true,
+      required: true,
+      lowercase: true,
+      unique: true,
+      validate: {
+        validator(e) {
+          return validator.isEmail(e);
+        },
       },
     },
-  },
-  age: {
-    type: Number,
-    require: true,
-    validate: {
-      validator(a) {
-        if (a < 0) {
-          throw new Error("Age must be +ve.");
-        }
+    age: {
+      type: Number,
+      require: true,
+      validate: {
+        validator(a) {
+          if (a < 0) {
+            throw new Error("Age must be +ve.");
+          }
+        },
       },
     },
-  },
-  password: {
-    type: String,
-    require: true,
-    trim: true,
-    minlength: 8,
-    validate: {
-      validator(pass) {
-        // 1. Password's min length should be 8 -> Done
-        // 2. Password must not contain spaces, newlines and tabs.
-        // 3. It cannot contain the word "password"
-        debugger;
-        if (pass.includes(" ") || pass.includes("\n") || pass.includes("\t")) {
-          throw new Error("Password includes space/tab/newline char");
-        }
-        if (pass.toLowerCase().includes("password")) {
-          throw new Error("Password must not contain 'password'");
-        }
+    password: {
+      type: String,
+      require: true,
+      trim: true,
+      minlength: 8,
+      validate: {
+        validator(pass) {
+          // 1. Password's min length should be 8 -> Done
+          // 2. Password must not contain spaces, newlines and tabs.
+          // 3. It cannot contain the word "password"
+          debugger;
+          if (
+            pass.includes(" ") ||
+            pass.includes("\n") ||
+            pass.includes("\t")
+          ) {
+            throw new Error("Password includes space/tab/newline char");
+          }
+          if (pass.toLowerCase().includes("password")) {
+            throw new Error("Password must not contain 'password'");
+          }
+        },
       },
     },
-  },
-  isEligible: {
-    type: Boolean,
-    default: false,
-  },
-  tokens: [
-    {
-      token: {
-        type: String,
-        require: true,
-      },
+    isEligible: {
+      type: Boolean,
+      default: false,
     },
-  ],
-});
+    tokens: [
+      {
+        token: {
+          type: String,
+          require: true,
+        },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
+);
 
 UserSchema.virtual("tasks", {
   ref: "Task",
@@ -115,9 +125,7 @@ UserSchema.methods.toJSON = function () {
 UserSchema.methods.generateUserToken = async function () {
   const user = this;
   const token = await generateToken(user._id);
-  console.log(user.tokens);
   user.tokens.push({ token });
-  console.log(user.tokens);
   user.save();
   return token;
 };

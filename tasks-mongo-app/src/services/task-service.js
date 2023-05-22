@@ -1,3 +1,4 @@
+const TaskModel = require("../models/Task");
 const Task = require("../models/Task");
 
 const getTaskById = (req, res) => {
@@ -34,8 +35,32 @@ const addNewTask = async (req, res) => {
 
 const getAllTasks = async (req, res) => {
   try {
-    let foundTasks = await Task.find().populate("owner").exec();
-    // foundTasks = await foundTasks.populate("owner").exec();
+    let user = req.user;
+    let match = {};
+    if (req.query.complete) {
+      match.isComplete = req.query.complete === "true";
+    }
+    let options = {};
+    let sort = {};
+    if (req.query.pageSize) {
+      options.skip =
+        (parseInt(req.query?.pageNumber ?? 1) - 1) *
+        parseInt(req.query.pageSize);
+      options.limit = parseInt(req.query.pageSize);
+    }
+    if (req.query.sortBy) {
+      let partsOfSortBy = req.query.sortBy.split(":");
+      sort[partsOfSortBy[0]] = partsOfSortBy[1] === "asc" ? 1 : -1;
+    }
+    await user.populate({
+      path: "tasks",
+      match,
+      options: {
+        ...options,
+        sort,
+      },
+    });
+    let foundTasks = user.tasks;
     console.log(`Found ${foundTasks.length} tasks.`);
     return res.status(200).send(foundTasks);
   } catch (error) {
@@ -46,11 +71,11 @@ const getAllTasks = async (req, res) => {
 
 const updateTaskById = (req, res) => {
   const { _id } = req.params;
-  const { title, description } = req.body;
-  Task.updateOne({ _id }, { $set: { title, description } })
+  const userId = req.user._id;
+  Task.updateOne({ _id, owner: userId }, { $set: { ...req.body } })
     .then(({ matchedCount }) => {
       if (!matchedCount) {
-        const message = `Task with ID: ${_id} is not found.`;
+        const message = `Task with ID: ${_id} is not found for user with ID: ${userId}`;
         console.error(message);
         return res.status(404).send({ message });
       }
@@ -65,10 +90,11 @@ const updateTaskById = (req, res) => {
 
 const deleteTaskById = (req, res) => {
   const { _id } = req.params;
-  Task.deleteOne({ _id })
+  const userId = req.user._id;
+  Task.deleteOne({ _id, owner: userId })
     .then(({ deletedCount }) => {
       if (!deletedCount) {
-        const message = `Task with ID: ${_id} is not found.`;
+        const message = `Task with ID: ${_id} is not found for user with ID: ${userId}`;
         console.error(message);
         return res.status(404).send({ message });
       }
@@ -99,6 +125,12 @@ const marlTasksAsComplete = (req, res) => {
     });
 };
 
+const deleteTasksOfUser = (userId) => {
+  const deletePromise = Task.deleteMany({ owner: userId });
+  console.log(`Deleting tasks of User with ID: ${userId}`);
+  return deletePromise;
+};
+
 module.exports = {
   getTaskById,
   addNewTask,
@@ -106,4 +138,5 @@ module.exports = {
   updateTaskById,
   deleteTaskById,
   marlTasksAsComplete,
+  deleteTasksOfUser,
 };

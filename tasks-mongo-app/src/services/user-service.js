@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const { deleteTasksOfUser } = require("./task-service");
 
 const SUPPORTED_UPDATES = ["name", "isEligible", "age", "password"];
 
@@ -7,7 +8,6 @@ const addNewUser = async (req, res) => {
     const { name, email, age, password } = req.body;
     const user = new User({ name, email, age, password });
     await user.save();
-    console.log("Saved.");
     const token = await user.generateUserToken();
     return res.status(201).send({ user, token });
   } catch (err) {
@@ -85,8 +85,8 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { user } = req;
-    console.log(user);
-    await User.deleteOne(user);
+    await User.deleteOne({ _id: user._id });
+    await deleteTasksOfUser(user._id);
     console.info(`User with ID: ${user._id} was successfully deleted.`);
     return res.status(200).send(true);
   } catch (error) {
